@@ -8,6 +8,8 @@ from flask import Flask, Response, make_response, render_template, request
 from sassutils.wsgi import SassMiddleware
 from waitress import serve
 
+from . import charts, models
+
 app = Flask(__name__)
 scss_manifest = {app.name: ('static/_scss', 'static/css')}
 # Middleware
@@ -46,15 +48,9 @@ def requires_auth(f):
 
 @app.context_processor
 def load_data():
-    update_db_from_github(refresh_timedelta=app.config['REFRESH_TIMEDELTA'])
-    data = {'issues': Issue.query.all(), }
-    for i in Issue.query:
-        data['issue-{0}-milestones'.format(i.number)] = i.milestones
-    (data['lifecycle_script'], data['lifecycle_div']) = issue_lifecycles()
-    (data['authors_by_location_script'],
-     data['authors_by_location_div']) = n_authors_by_location()
-    (data['authorship_histogram_script'],
-     data['authorship_histogram_div']) = n_posts_histogram()
+    repo = models.Repo.query.first()
+    repo.set_milestone_color_map()
+    data = {'chart': charts.lifecycles(repo), 'moo': 'cow'}
     return dict(data=data)
 
 

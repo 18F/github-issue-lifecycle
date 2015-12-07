@@ -1,0 +1,18 @@
+{% from 'macros.html' import created_at %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Issue Progress</title>
+  <link href="{{ url_for('static', filename='css/main.scss.css') }}" rel="stylesheet" type="text/css">
+
+  <link rel="stylesheet" href="http://cdn.pydata.org/bokeh/release/bokeh-0.10.0.min.css" type="text/css" />
+  <script type="text/javascript" src="http://cdn.pydata.org/bokeh/release/bokeh-0.10.0.min.js"></script>
+
+  {% block scripts %}{% endblock %}
+
+</head>
+<body><div class="container usa-grid usa-grid-one-whole">{% block body %}{% endblock %}</body>
+<script src="/static/js/vendor/jquery-1.11.3.min.js"></script>
+<script src="/static/js/app.js"></script>
+</body>
+</html>

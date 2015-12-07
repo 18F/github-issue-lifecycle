@@ -1,0 +1,1 @@
+{% macro created_at(milestone, events) %}{% set id = milestone['number'].__str__() %}{% if events|length > 0 %}{% set event = events|last %}{% set title = event.title %}{% if title == "ready to approve" %}{{ event.created_at }}{% endif %}{% endif %}{% endmacro %}

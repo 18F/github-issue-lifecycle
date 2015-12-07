@@ -1,0 +1,11 @@
+{% extends "header.html" %}
+
+{% block scripts %}
+  {{ data.chart.script | safe }}
+{% endblock %}
+
+{% block body %}
+
+  {{ data.chart.div | safe}}
+
+{% endblock %}

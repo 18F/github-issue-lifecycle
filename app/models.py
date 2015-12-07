@@ -1,4 +1,6 @@
+from collections import OrderedDict
 from datetime import date, datetime
+import itertools
 import os
 
 import requests
@@ -90,6 +92,38 @@ class Repo(db.Model):
             issue = Issue.from_raw(issue_data)
             issue.repo = self
             issue.fetch_events()
+
+    def spans(self):
+        for (idx, iss) in enumerate(self.issues):
+            lifecycle = iss.lifecycle()
+            for span in lifecycle['spans']:
+                yield {'issue': iss,
+                       'index': idx,
+                       'span': span,
+                       'final': lifecycle['final']}
+
+    def stones(self):
+        for (idx, iss) in enumerate(self.issues):
+            lifecycle = iss.lifecycle()
+            for stone in lifecycle['points']:
+                yield {'issue': iss, 'index': idx, 'stone': stone}
+
+    def milestones(self):
+        "List of milestones in all issues, in rough order of first appearance"
+        nested = [[e.milestone for e in i.events] for i in self.issues]
+        all_milestones = list(OrderedDict.fromkeys(
+            itertools.chain.from_iterable(nested)))
+        all_milestones.remove(None)
+        return all_milestones
+
+    _PALLETTE = 'blue', 'grey', 'green', 'orange', 'purple', 'cyan', 'brown', 'maroon'
+
+    def set_milestone_color_map(self):
+        "Decide a color to correspond to each type of milestone used in the repo"
+        self.milestone_colors = dict(zip(self.milestones(), self._PALLETTE))
+        self.milestone_colors.update({'opened': 'gold',
+                                      'reopened': 'gold',
+                                      'closed': 'black'})
 
 
 labels_issues = db.Table(
@@ -189,7 +223,10 @@ class Issue(db.Model):
                 result['spans'].append((statuses[:], start_date,
                                         event.created_at))
                 if event.event == 'demilestoned':
-                    statuses.remove(event.milestone)
+                    try:
+                        statuses.remove(event.milestone)
+                    except ValueError:
+                        pass  # sometimes they demilestone a nonexistent milestone!
                 elif event.event == 'milestoned':
                     statuses.append(event.milestone)
                 elif event.event in ('closed', 'reopened'):
