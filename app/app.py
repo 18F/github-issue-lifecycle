@@ -46,18 +46,25 @@ def requires_auth(f):
     return decorated
 
 
-@app.context_processor
-def load_data():
-    repo = models.Repo.query.first()
+def load_data(owner_name, repo_name):
+    repo = models.Repo.get_fresh(owner_name=owner_name, repo_name=repo_name)
     repo.set_milestone_color_map()
-    data = {'chart': charts.lifecycles(repo), 'moo': 'cow'}
-    return dict(data=data)
+    return {'chart': charts.lifecycles(repo)}
 
 
-@app.route("/")
 @requires_auth
-def index():
-    return render_template("index.html")
+@app.route("/<owner>/<repo>/")
+def index(owner, repo):
+    try:
+        data = load_data(owner, repo)
+    except FileNotFoundError as e:
+        return render_template("err.html",
+                               data={'owner': owner,
+                                     'repo': repo,
+                                     'err': e}), 404
+    return render_template("index.html",
+                           data=load_data(owner, repo),
+                           error=error)
 
 
 @app.route("/manage/")

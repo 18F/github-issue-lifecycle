@@ -1,5 +1,5 @@
 from collections import OrderedDict
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 import itertools
 import os
 
@@ -41,6 +41,28 @@ class Repo(db.Model):
 
     ISSUES_PAGE_SIZE = 100
 
+    @classmethod
+    def get_fresh(cls, owner_name, repo_name, refresh_threshhold_seconds=None):
+        """For a repo ``repo_name`` owned by ``owner_name``:
+
+        1. Fetches or creates the Repo model instance
+        2. Refreshes the data from Github if necessary"""
+
+        if refresh_threshhold_seconds is None:
+            refresh_threshhold_seconds = app.config[
+                'REFRESH_THRESHHOLD_SECONDS']
+        repo = (cls.query.filter_by(owner=owner_name,
+                                    name=repo_name).first() or
+                cls(owner=owner_name,
+                    name=repo_name,
+                    synched_at=BEGINNING_DATETIME))
+        if (datetime.now() - repo.synched_at) > timedelta(
+                seconds=refresh_threshhold_seconds):
+            repo.fetch_issues()
+        db.session.add(repo)
+        db.session.commit()
+        return repo
+
     def url(self):
         return 'https://api.github.com/repos/{}/{}/'.format(self.owner,
                                                             self.name)
@@ -81,8 +103,13 @@ class Repo(db.Model):
                               for i in issues.json()
                               if i['number'] not in result]
             return result.values()
+        else:
+            raise FileNotFoundError('Could not fetch issues for repo {}/{}: {}'
+                                    .format(self.owner, self.name,
+                                            issues.text))
 
     def fetch_issues(self):
+        """Refresh the database's store of issues for this repo from github."""
         for issue_data in self.raw_issue_data():
             issue = Issue.query.filter_by(
                 number=issue_data.get('number')).first()
@@ -92,6 +119,8 @@ class Repo(db.Model):
             issue = Issue.from_raw(issue_data)
             issue.repo = self
             issue.fetch_events()
+        self.synched_at = datetime.now()
+        db.session.commit()
 
     def spans(self):
         for (idx, iss) in enumerate(self.issues):

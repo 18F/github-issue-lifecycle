@@ -35,13 +35,10 @@ def cleandata():
 
 
 @manager.command
-def update():
-    repo = (models.Repo.query.filter_by(name='blog-drafts',
-                                        owner='18F').first() or
-            models.Repo(name='blog-drafts',
-                        owner='18F',
-                        synched_at=models.BEGINNING_DATETIME))
-    repo.fetch_issues()
+def update(owner_name, repo_name):
+    models.Repo.get_fresh(owner_name=owner_name,
+                          repo_name=repo_name,
+                          refresh_threshhold_seconds=0)
 
 
 if __name__ == "__main__":
