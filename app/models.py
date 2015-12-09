@@ -122,6 +122,14 @@ class Repo(db.Model):
         self.synched_at = datetime.now()
         db.session.commit()
 
+    def json_summary(self):
+        issues = [iss.json_summary() for iss in self.issues]
+        result = {'name': self.name,
+                  'owner': self.owner,
+                  'spans': [iss['spans'] for iss in issues],
+                  'points': [iss['points'] for iss in issues], }
+        return result
+
     def spans(self):
         for (idx, iss) in enumerate(self.issues):
             lifecycle = iss.lifecycle()
@@ -229,6 +237,21 @@ class Issue(db.Model):
         if response.ok:
             for raw_event in response.json():
                 self.events.append(Event.from_raw(raw_event))
+
+    def json_summary(self):
+
+        lifecycle = self.lifecycle()
+
+        return {
+            'number': self.number,
+            'title': self.title,
+            'html_url': self.html_url,
+            'created_at': self.created_at,
+            'updated_at': self.updated_at,
+            'closed_at': self.closed_at,
+            'spans': lifecycle['spans'],
+            'points': lifecycle['points'],
+        }
 
     def lifecycle(self):
         """Description of the events of this issue's lifecycle.

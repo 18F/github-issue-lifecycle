@@ -14,7 +14,6 @@ MARGIN = 6
 def lifecycles(repo):
     "Returns (script, div) tuple of Bokeh chart of Issue lifecycles for a repo"
 
-    repo.set_milestone_color_map()
     spans = list(repo.spans())
     stones = list(repo.stones())
     source = ColumnDataSource(data=dict(

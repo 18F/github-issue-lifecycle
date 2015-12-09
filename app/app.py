@@ -1,16 +1,17 @@
 import json
 import os
-from datetime import timedelta
 from functools import wraps
 
 import requests
 from flask import Flask, Response, make_response, render_template, request
+from flask_restful import Resource, Api
 from sassutils.wsgi import SassMiddleware
 from waitress import serve
 
-from . import charts, models
+from . import charts, models, utils
 
 app = Flask(__name__)
+api = Api(app)
 scss_manifest = {app.name: ('static/_scss', 'static/css')}
 # Middleware
 app.wsgi_app = SassMiddleware(app.wsgi_app, scss_manifest)
@@ -46,7 +47,7 @@ def requires_auth(f):
     return decorated
 
 
-def load_data(owner_name, repo_name):
+def chart(owner_name, repo_name):
     repo = models.Repo.get_fresh(owner_name=owner_name, repo_name=repo_name)
     repo.set_milestone_color_map()
     return {'chart': charts.lifecycles(repo)}
@@ -56,15 +57,12 @@ def load_data(owner_name, repo_name):
 @app.route("/<owner>/<repo>/")
 def index(owner, repo):
     try:
-        data = load_data(owner, repo)
+        return render_template("index.html", data=chart(owner, repo))
     except FileNotFoundError as e:
         return render_template("err.html",
                                data={'owner': owner,
                                      'repo': repo,
                                      'err': e}), 404
-    return render_template("index.html",
-                           data=load_data(owner, repo),
-                           error=error)
 
 
 @app.route("/manage/")
@@ -80,3 +78,30 @@ def manage():
     else:
         error = "No server to rebuild"
     return render_template("manage.html", error=error)
+
+
+@api.representation('application/json')
+def output_json(data, code, headers=None):
+    "Serializes dates in ISO8601 format"
+    resp = make_response(
+        json.dumps(data,
+                   cls=utils.ISO8601JSONEncoder,
+                   indent=2),
+        code)
+    resp.headers.extend(headers or {})
+    return resp
+
+
+class Api(Resource):
+    def get(self, owner=None, repo=None):
+        if not owner or not repo:
+            return {'Usage': '/api/<owner>/<repo>/'}
+        repo = models.Repo.get_fresh(owner_name=owner, repo_name=repo)
+        return repo.json_summary()
+
+
+api.add_resource(Api, '/api/<owner>/<repo>/')
+
+# TODO: legend on chart
+# TODO: make api
+# TODO: tests
