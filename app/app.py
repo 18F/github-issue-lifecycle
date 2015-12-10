@@ -103,5 +103,4 @@ class Api(Resource):
 api.add_resource(Api, '/api/<owner>/<repo>/')
 
 # TODO: legend on chart
-# TODO: make api
 # TODO: tests

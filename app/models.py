@@ -51,6 +51,7 @@ class Repo(db.Model):
         if refresh_threshhold_seconds is None:
             refresh_threshhold_seconds = app.config[
                 'REFRESH_THRESHHOLD_SECONDS']
+        (owner_name, repo_name) = (owner_name.lower(), repo_name.lower())
         repo = (cls.query.filter_by(owner=owner_name,
                                     name=repo_name).first() or
                 cls(owner=owner_name,
@@ -123,11 +124,8 @@ class Repo(db.Model):
         db.session.commit()
 
     def json_summary(self):
-        issues = [iss.json_summary() for iss in self.issues]
-        result = {'name': self.name,
-                  'owner': self.owner,
-                  'spans': [iss['spans'] for iss in issues],
-                  'points': [iss['points'] for iss in issues], }
+        result = dict(name=self.name, owner=self.owner,
+            issues=[iss.json_summary() for iss in self.issues])
         return result
 
     def spans(self):
@@ -230,9 +228,17 @@ class Issue(db.Model):
         return issue
 
     def fetch_events(self):
+        """
         response = requests.get('{}issues/{}/events?per_page=100'.format(
             self.repo.url(), self.number),
                                 auth=authorization())
+                                """
+        response = requests.get('{}?per_page=100'.format(self.events_url),
+        auth=authorization())
+        if self.number == 4:
+            from pprint import pprint
+            with open('events.json', 'w') as outfile:
+                pprint(response.json(), outfile)
         # todo: if > 100 events?
         if response.ok:
             for raw_event in response.json():
@@ -272,8 +278,7 @@ class Issue(db.Model):
                                'reopened'):
                 if event.milestone and event.milestone in statuses:
                     continue
-                result['spans'].append((statuses[:], start_date,
-                                        event.created_at))
+                result['spans'].append({'milestones': statuses[:], 'start': start_date, 'end': event.created_at})
                 if event.event == 'demilestoned':
                     try:
                         statuses.remove(event.milestone)
@@ -283,16 +288,15 @@ class Issue(db.Model):
                     statuses.append(event.milestone)
                 elif event.event in ('closed', 'reopened'):
                     statuses.append(event.event)
-                result['points'].append((statuses[-1], event.created_at))
+                result['points'].append({'status': statuses[-1], 'at': event.created_at})
                 start_date = event.created_at
         if self.closed_at:
             if statuses[-1] != 'closed':
                 if self.closed_at > start_date:
-                    result['spans'].append((statuses[:], start_date,
-                                            event.created_at))
-                result['points'].append(('closed', self.closed_at))
+                    result['spans'].append({'milestones': statuses[:], 'start': start_date, 'end': event.created_at})
+                result['points'].append({'status': 'closed', 'at': self.closed_at})
         else:
-            result['spans'].append((statuses[:], start_date, datetime.now()))
+            result['spans'].append({'milestones': statuses[:], 'start': start_date, 'end': datetime.now()})
         result['final'] = [s for s in statuses
                            if s not in ('closed', 'reopened')][-1]
         return result
