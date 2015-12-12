@@ -94,10 +94,12 @@ def output_json(data, code, headers=None):
 
 class Api(Resource):
     def get(self, owner=None, repo=None):
+        refresh_threshhold_seconds = request.args.get('data_age')
+        print('refresh threshhold: {}'.format(refresh_threshhold_seconds))
         if not owner or not repo:
             return {'Usage': '/api/<owner>/<repo>/'}
         try:
-            repo = models.Repo.get_fresh(owner_name=owner, repo_name=repo)
+            repo = models.Repo.get_fresh(owner_name=owner, repo_name=repo, refresh_threshhold_seconds=refresh_threshhold_seconds)
         except FileNotFoundError as e:
             raise NotFound(e)
         return repo.json_summary()

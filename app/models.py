@@ -58,7 +58,7 @@ class Repo(db.Model):
                     name=repo_name,
                     synched_at=BEGINNING_DATETIME))
         if (datetime.now() - repo.synched_at) > timedelta(
-                seconds=refresh_threshhold_seconds):
+                seconds=int(refresh_threshhold_seconds)):
             repo.fetch_issues()
         db.session.add(repo)
         db.session.commit()

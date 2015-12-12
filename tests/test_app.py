@@ -7,7 +7,7 @@ from flask.ext.testing import TestCase
 from app import db, models
 from app.app import app
 from config import config
-from mock_github import requests_get_stub
+from .mock_github import requests_get_stub
 
 app.config.from_object(config['testing'])
 
@@ -46,6 +46,22 @@ class AppTestCase(TestCase):
         repo = models.Repo.query.filter_by(owner=owner, name=name).first()
         assert repo
         assert len(repo.issues) == 2
+
+    def test_cached_data_used(self):
+        owner = '18f'
+        name = 'fictionalrepo2'
+        resp = self.client.get('/api/{}/{}/'.format(owner, name))
+        calls_before = requests.get.call_count
+        resp = self.client.get('/api/{}/{}/?data_age=3600'.format(owner, name))
+        assert requests.get.call_count == calls_before
+
+    def test_cached_data_not_used(self):
+        owner = '18f'
+        name = 'fictionalrepo2'
+        resp = self.client.get('/api/{}/{}/'.format(owner, name))
+        calls_before = requests.get.call_count
+        resp = self.client.get('/api/{}/{}/?data_age=0'.format(owner, name))
+        assert requests.get.call_count > calls_before
 
     def test_nonexistent_repo(self):
         resp = self.client.get('/api/doesnot/exist/')
