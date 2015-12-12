@@ -3,8 +3,8 @@ import os
 from functools import wraps
 
 import requests
-from flask import Flask, Response, make_response, render_template, request
-from flask_restful import Resource, Api
+from flask import Flask, Response, make_response, render_template, request, abort
+from flask_restful import Resource, Api, NotFound
 from sassutils.wsgi import SassMiddleware
 from waitress import serve
 
@@ -96,7 +96,10 @@ class Api(Resource):
     def get(self, owner=None, repo=None):
         if not owner or not repo:
             return {'Usage': '/api/<owner>/<repo>/'}
-        repo = models.Repo.get_fresh(owner_name=owner, repo_name=repo)
+        try:
+            repo = models.Repo.get_fresh(owner_name=owner, repo_name=repo)
+        except FileNotFoundError as e:
+            raise NotFound(e)
         return repo.json_summary()
 
 
