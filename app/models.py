@@ -85,9 +85,8 @@ class Repo(db.Model):
             'state': 'all'  # include closed issues
         }
 
-        issues = requests.get(self.url() + 'issues',
-                              params=params,
-                              auth=authorization())
+        auth = authorization()
+        issues = requests.get(self.url() + 'issues', params=params, auth=auth)
         if issues.ok:
             result = {}
             new_issues = [i for i in issues.json()
@@ -105,9 +104,11 @@ class Repo(db.Model):
                               if i['number'] not in result]
             return result.values()
         else:
-            raise FileNotFoundError('Could not fetch issues for repo {}/{}: {}'
-                                    .format(self.owner, self.name,
-                                            issues.text))
+            err_msg = 'Could not fetch issues for repo {}/{}: {}'.format(
+                self.owner, self.name, issues.text)
+            if not auth:
+                err_msg += '\nNOTE: Environment variables GITHUB_USER and GITHUB_AUTH not set'
+            raise FileNotFoundError(err_msg)
 
     def fetch_issues(self):
         """Refresh the database's store of issues for this repo from github."""
@@ -127,6 +128,14 @@ class Repo(db.Model):
         result = dict(name=self.name,
                       owner=self.owner,
                       issues=[iss.json_summary() for iss in self.issues])
+        return result
+
+    def json_summary_flattened(self):
+        spans = list(self.spans())
+        result = dict(spans=spans,
+                      stones=(self.stones()),
+                      colors=[self.milestone_colors[s['span']['milestones'][
+                          -1]] for s in spans], )
         return result
 
     def spans(self):

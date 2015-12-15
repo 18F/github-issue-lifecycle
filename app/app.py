@@ -3,15 +3,14 @@ import os
 from functools import wraps
 
 import requests
-from flask import Flask, Response, make_response, render_template, request, abort
-from flask_restful import Resource, Api, NotFound
+from flask import Flask, Response, make_response, render_template, request
+import flask_restful
 from sassutils.wsgi import SassMiddleware
-from waitress import serve
 
 from . import charts, models, utils
 
 app = Flask(__name__)
-api = Api(app)
+api = flask_restful.Api(app)
 scss_manifest = {app.name: ('static/_scss', 'static/css')}
 # Middleware
 app.wsgi_app = SassMiddleware(app.wsgi_app, scss_manifest)
@@ -47,17 +46,18 @@ def requires_auth(f):
     return decorated
 
 
-def chart(owner_name, repo_name):
-    repo = models.Repo.get_fresh(owner_name=owner_name, repo_name=repo_name)
-    repo.set_milestone_color_map()
-    return {'chart': charts.lifecycles(repo)}
-
-
 @requires_auth
 @app.route("/<owner>/<repo>/")
 def index(owner, repo):
+    data_age = request.args.get('data_age') or app.config[
+        'REFRESH_THRESHHOLD_SECONDS']
     try:
-        return render_template("index.html", data=chart(owner, repo))
+        repo = models.Repo.get_fresh(owner_name=owner,
+                                     repo_name=repo,
+                                     refresh_threshhold_seconds=int(data_age))
+        repo.set_milestone_color_map()
+        chart = charts.lifecycles(repo.json_summary_flattened())
+        return render_template("index.html", data={'chart': chart})
     except FileNotFoundError as e:
         return render_template("err.html",
                                data={'owner': owner,
@@ -92,16 +92,21 @@ def output_json(data, code, headers=None):
     return resp
 
 
-class Api(Resource):
+class Api(flask_restful.Resource):
     def get(self, owner=None, repo=None):
-        refresh_threshhold_seconds = request.args.get('data_age')
-        print('refresh threshhold: {}'.format(refresh_threshhold_seconds))
+        """Return JSON representation of lifecycle info from repo `owner.repo`."""
+
+        data_age = request.args.get('data_age') or app.config[
+            'REFRESH_THRESHHOLD_SECONDS']
         if not owner or not repo:
             return {'Usage': '/api/<owner>/<repo>/'}
         try:
-            repo = models.Repo.get_fresh(owner_name=owner, repo_name=repo, refresh_threshhold_seconds=refresh_threshhold_seconds)
+            repo = models.Repo.get_fresh(
+                owner_name=owner,
+                repo_name=repo,
+                refresh_threshhold_seconds=int(data_age))
         except FileNotFoundError as e:
-            raise NotFound(e)
+            raise flask_restful.NotFound(e)
         return repo.json_summary()
 
 

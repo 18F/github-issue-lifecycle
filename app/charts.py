@@ -1,8 +1,9 @@
-import datetime
+"""
+Generate Bokeh chart for a repository's issue history.
+"""
 
 from bokeh.embed import components
-from bokeh.models import ColumnDataSource, OpenURL, TapTool, HoverTool, CustomJS
-from bokeh.models.annotations import Legend
+from bokeh.models import ColumnDataSource, OpenURL, TapTool, HoverTool
 from bokeh.plotting import figure
 
 WIDTH = 800
@@ -11,24 +12,22 @@ THICKNESS = 3
 MARGIN = 6
 
 
-def lifecycles(repo):
+def lifecycles(data):
     "Returns (script, div) tuple of Bokeh chart of Issue lifecycles for a repo"
 
-    spans = list(repo.spans())
-    stones = list(repo.stones())
     source = ColumnDataSource(data=dict(
-        left=[s['span']['start'] for s in spans],
-        date=[s['span']['start'].strftime('%d %B %Y') for s in spans],
-        right=[s['span']['end'] for s in spans],
-        bottom=[s['index'] * (THICKNESS + 2 * MARGIN) for s in spans],
-        top=[s['index'] * (THICKNESS + 2 * MARGIN) + THICKNESS for s in spans],
-        color=[repo.milestone_colors[s['span']['milestones'][-1]] for s in spans],
-        issue=[s['issue'].title for s in spans],
-        status=[', '.join(s['span']['milestones']) for s in spans],
-        assignee=[s['issue'].assignee_login for s in spans],
-        url=[s['issue'].html_url for s in spans],
-        final=[s['final'] for s in spans],
-        ))
+        left=[s['span']['start'] for s in data['spans']],
+        date=[s['span']['start'].strftime('%d %B %Y') for s in data['spans']],
+        right=[s['span']['end'] for s in data['spans']],
+        bottom=[s['index'] * (THICKNESS + 2 * MARGIN) for s in data['spans']],
+        top=[s['index'] * (THICKNESS + 2 * MARGIN) + THICKNESS
+             for s in data['spans']],
+        color=data['colors'],
+        issue=[s['issue'].title for s in data['spans']],
+        status=[', '.join(s['span']['milestones']) for s in data['spans']],
+        assignee=[s['issue'].assignee_login for s in data['spans']],
+        url=[s['issue'].html_url for s in data['spans']],
+        final=[s['final'] for s in data['spans']], ))
 
     fig = figure(x_axis_type='datetime', title='Issue progress', )
     fig.yaxis.major_label_text_color = None
