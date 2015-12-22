@@ -1,0 +1,14 @@
+language: python
+sudo: false
+python:
+  - "2.7"
+  - "3.4"
+  - "3.5"
+before_install:
+  - pip install codecov
+install:
+  - python setup.py develop
+  - pip install -U -r dev-requirements.txt
+script: nosetests --with-coverage --cover-package=.
+after_success:
+  - codecov

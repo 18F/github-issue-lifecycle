@@ -14,6 +14,7 @@ class DevelopmentConfig(Config):
     SQLALCHEMY_DATABASE_URI = os.environ.get('DEV_DATABASE_URL') or \
         'postgresql:///github-issues-dev'
     REFRESH_THRESHHOLD_SECONDS = 3600
+    PORT = 5000
 
 
 class TestingConfig(Config):
@@ -22,12 +23,14 @@ class TestingConfig(Config):
         'postgresql:///github-issues-test'
     WTF_CSRF_ENABLED = False
     REFRESH_THRESHHOLD_SECONDS = 3600
+    PORT = 5000
 
 
 class ProductionConfig(Config):
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or \
         'postgresql:///github-issues'
     REFRESH_THRESHHOLD_SECONDS = 3600
+    PORT = 5000
 
 
 config = {

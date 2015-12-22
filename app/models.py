@@ -158,14 +158,22 @@ class Repo(db.Model):
         nested = [[e.milestone for e in i.events] for i in self.issues]
         all_milestones = list(OrderedDict.fromkeys(
             itertools.chain.from_iterable(nested)))
-        all_milestones.remove(None)
+        if None in all_milestones:
+            all_milestones.remove(None)
         return all_milestones
 
-    _PALLETTE = 'blue', 'grey', 'green', 'orange', 'purple', 'cyan', 'brown', 'maroon'
+    _PALLETTE = ('greenyellow', 'cornflowerblue',
+        'hotpink', 'indigo', 'fuschia',
+        'green', 'lightskyblue', 'firebrick', 'gray', 'lightcoral',
+        'darkslategray', 'darkorange', 'darkolivegreen',
+        'cyan', 'chocolate', 'blueviolet', 'burlywood', 'aquamarine', )
 
     def set_milestone_color_map(self):
         "Decide a color to correspond to each type of milestone used in the repo"
-        self.milestone_colors = dict(zip(self.milestones(), self._PALLETTE))
+        colors = itertools.cycle(self._PALLETTE) # reuse colors if too many milestones
+        self.milestone_colors = {}
+        for milestone in self.milestones():
+            self.milestone_colors[milestone] = colors.__next__()
         self.milestone_colors.update({'opened': 'gold',
                                       'reopened': 'gold',
                                       'closed': 'black'})
@@ -303,7 +311,7 @@ class Issue(db.Model):
                 if self.closed_at > start_date:
                     result['spans'].append({'milestones': statuses[:],
                                             'start': start_date,
-                                            'end': event.created_at})
+                                            'end': self.closed_at})
                 result['points'].append({'status': 'closed',
                                          'at': self.closed_at})
         else:

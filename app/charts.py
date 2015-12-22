@@ -38,10 +38,7 @@ def lifecycles(data):
              top='top',
              source=source,
              color='color',
-             alpha='alpha', )
-
-    # fig.x(x='x', y='y', color='stone_color', source=source, size=THICKNESS * 2)
-    # the hovers don't correspond
+             )
 
     hover = HoverTool(tooltips=[("issue", "@issue"),
                                 ("date", "@date"),
