@@ -62,6 +62,7 @@ class Repo(db.Model):
             repo.fetch_issues()
         db.session.add(repo)
         db.session.commit()
+        repo.set_milestone_color_map() 
         return repo
 
     def url(self):
