@@ -1,26 +1,22 @@
 import json
 import os
-from functools import wraps
 
-import requests
-from flask import Flask, Response, make_response, render_template, request
 import flask_restful
-# from sassutils.wsgi import SassMiddleware
+from flask import Flask, make_response, render_template, request
 
 from . import charts, models, utils
 
 app = Flask(__name__)
 api = flask_restful.Api(app)
-# scss_manifest = {app.name: ('static/_scss', 'static/css')}
-# Middleware
-# app.wsgi_app = SassMiddleware(app.wsgi_app, scss_manifest)
 
 servers = {"production": os.environ.get('PROD'),
            "staging": os.environ.get('STAGING')}
 
+
 @app.route("/")
 def usage():
     return "Usage: /repo_owner_name/repo_name/"
+
 
 @app.route("/<owner>/<repo>/")
 def index(owner, repo):
@@ -38,20 +34,6 @@ def index(owner, repo):
                                data={'owner': owner,
                                      'repo': repo,
                                      'err': e}), 404
-
-
-@app.route("/manage/")
-def manage():
-    error = None
-    if request.args.get('rebuild'):
-        server = request.args.get('rebuild')
-        url = servers[server]
-        headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
-        payload = {"ref": "refs/heads/%s" % server}
-        requests.post(url, data=json.dumps(payload), headers=headers)
-    else:
-        error = "No server to rebuild"
-    return render_template("manage.html", error=error)
 
 
 @api.representation('application/json')
@@ -87,4 +69,3 @@ class Api(flask_restful.Resource):
 api.add_resource(Api, '/api/<owner>/<repo>/')
 
 # TODO: legend on chart
-# TODO: tests

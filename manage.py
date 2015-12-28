@@ -1,6 +1,5 @@
 import os
-from datetime import date, timedelta
-from os import environ, path, stat
+from os import environ
 
 from flask.ext.migrate import Migrate, MigrateCommand
 from flask.ext.script import Manager
@@ -36,6 +35,7 @@ def cleandata():
 
 @manager.command
 def update(owner_name, repo_name):
+    "Refreshes local database from Github"
     models.Repo.get_fresh(owner_name=owner_name,
                           repo_name=repo_name,
                           refresh_threshhold_seconds=0)

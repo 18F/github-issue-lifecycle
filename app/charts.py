@@ -3,7 +3,7 @@ Generate Bokeh chart for a repository's issue history.
 """
 
 from bokeh.embed import components
-from bokeh.models import ColumnDataSource, OpenURL, TapTool, HoverTool
+from bokeh.models import ColumnDataSource, HoverTool, OpenURL, TapTool
 from bokeh.plotting import figure
 
 WIDTH = 800
@@ -37,8 +37,7 @@ def lifecycles(data):
              right='right',
              top='top',
              source=source,
-             color='color',
-             )
+             color='color', )
 
     hover = HoverTool(tooltips=[("issue", "@issue"),
                                 ("date", "@date"),

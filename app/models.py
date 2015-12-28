@@ -1,7 +1,7 @@
-from collections import OrderedDict
-from datetime import date, datetime, timedelta
 import itertools
 import os
+from collections import OrderedDict
+from datetime import date, datetime, timedelta
 
 import requests
 from requests.auth import HTTPBasicAuth
@@ -62,7 +62,7 @@ class Repo(db.Model):
             repo.fetch_issues()
         db.session.add(repo)
         db.session.commit()
-        repo.set_milestone_color_map() 
+        repo.set_milestone_color_map()
         return repo
 
     def url(self):
@@ -163,15 +163,29 @@ class Repo(db.Model):
             all_milestones.remove(None)
         return all_milestones
 
-    _PALLETTE = ('greenyellow', 'cornflowerblue',
-        'hotpink', 'indigo', 'fuschia',
-        'green', 'lightskyblue', 'firebrick', 'gray', 'lightcoral',
-        'darkslategray', 'darkorange', 'darkolivegreen',
-        'cyan', 'chocolate', 'blueviolet', 'burlywood', 'aquamarine', )
+    _PALLETTE = ('greenyellow',
+                 'cornflowerblue',
+                 'hotpink',
+                 'indigo',
+                 'fuschia',
+                 'green',
+                 'lightskyblue',
+                 'firebrick',
+                 'gray',
+                 'lightcoral',
+                 'darkslategray',
+                 'darkorange',
+                 'darkolivegreen',
+                 'cyan',
+                 'chocolate',
+                 'blueviolet',
+                 'burlywood',
+                 'aquamarine', )
 
     def set_milestone_color_map(self):
         "Decide a color to correspond to each type of milestone used in the repo"
-        colors = itertools.cycle(self._PALLETTE) # reuse colors if too many milestones
+        colors = itertools.cycle(self._PALLETTE
+                                 )  # reuse colors if too many milestones
         self.milestone_colors = {}
         for milestone in self.milestones():
             self.milestone_colors[milestone] = colors.__next__()
