@@ -5,6 +5,9 @@ python:
 install:
   - pip install -U -r requirements.txt
   - pip install -U -r dev-requirements.txt
+before_script:
+  - psql -c 'create database "github-issues-test";' -U postgres
+  - python manage.py db upgrade
 script: nosetests --with-coverage --cover-package=.
 after_success:
   - codecov
