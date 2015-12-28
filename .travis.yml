@@ -11,3 +11,5 @@ before_script:
 script: nosetests --with-coverage --cover-package=.
 after_success:
   - codecov
+env:
+- FLASK_CONFIG=testing 
