@@ -3,6 +3,7 @@ sudo: false
 python:
   - "3.5"
 install:
+  - pip install -U -r requirements.txt
   - pip install -U -r dev-requirements.txt
 script: nosetests --with-coverage --cover-package=.
 after_success:
