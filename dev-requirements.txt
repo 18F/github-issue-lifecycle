@@ -1,0 +1,8 @@
+# Packaging
+twine
+wheel
+
+# Testing
+coverage
+nose
+flask-testing
