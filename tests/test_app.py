@@ -67,6 +67,14 @@ class AppTestCase(TestCase):
         resp = self.client.get('/api/doesnot/exist/')
         assert resp.status_code == 404
 
+    def test_chart_served(self):
+        owner = '18f'
+        name = 'fictionalrepo2'
+        resp = self.client.get('/{}/{}/'.format(owner, name))
+        assert resp.status_code == 200
+        assert 'text/html; charset=utf-8' in resp.headers.values()
+        assert b'Bokeh' in resp.data
+
 
 if __name__ == '__main__':
     unittest.main()
